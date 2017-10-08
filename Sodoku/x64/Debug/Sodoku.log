@@ -1,0 +1,4 @@
+﻿  Sodoku.cpp
+h:\uniworkspace\ejercicioscppada\sodoku\sodoku\sodoku.cpp(132): warning C4715: 'getCandidat': no todas las rutas de acceso de control devuelven un valor
+  Sodoku.vcxproj -> H:\UniWorkspace\EjerciciosCPPADA\Sodoku\x64\Debug\Sodoku.exe
+  Sodoku.vcxproj -> H:\UniWorkspace\EjerciciosCPPADA\Sodoku\x64\Debug\Sodoku.pdb (Partial PDB)

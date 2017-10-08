@@ -1,12 +1,95 @@
-// Sodoku.cpp: define el punto de entrada de la aplicación de consola.
+// Sodoku.cpp: define el punto de entrada de la aplicaciÃ³n de consola.
 //
 
 #include "stdafx.h"
-#include <iostream>
-#include <stack>
+#include <stdio.h>
+#include <stdlib.h> 
+#include <string.h>
+#include <time.h>
 
-using namespace std;
+// =============================================================================
+// ALUMNOS =====================================================================
+// =============================================================================
 
+char* NombreAlumno1 = "nombre del alumno 1";
+char* ApellidosAlumno1 = "apellidos del alumno 1";
+char* NIAAlumno1 = "1423234"; // NIA alumno1
+
+								// No rellenar en caso de grupo de un alumno
+char* NombreAlumno2 = "nombre del alumno 2";
+char* ApellidosAlumno2 = "apellidos del alumno 2";
+char* NIAAlumno2 = ""; // NIA alumno2
+
+char* NIAS[] = {
+	"1335167","1428136","1397750","1390855","1424739","1424670","1423739",
+	"1423177","1427371","1423725","1448752","1423210","1391968","1424454",
+	"1338429","1425988","1424818","1421980","1368533","1365501","1423802",
+	"1175542","1264719","1424801","1423710","1390452","1424116","1391795",
+	"1395085","1391630","1424310","1423234","1425968","1307828","1395062",
+	"1426532","1391627","1366098","1425082","1325835","1425067","1424350",
+	"1424035","1391544","1391634","1426771","1424698","1358835","1362219",
+	"1425785","1424114","1424408","1362389","1428260","1391808","1425084",
+	"1366706","1391632","1425109","1424032","1430970","1430896","1428176",
+	"1390536","1429086","1423588","1195650","1424671","1306347"
+};
+
+bool CheckNIA(char* nia)
+{
+	for (const char *pNIA : NIAS) {
+		if (strcmp(nia,pNIA) == 0) return true;
+	}
+	return false;
+}
+
+// =============================================================================
+// PROBLEMA ====================================================================
+// =============================================================================
+
+// Clock =======================================================================
+
+double Clock()
+{
+	LARGE_INTEGER cnt;
+	LARGE_INTEGER fre;
+
+	if (QueryPerformanceFrequency(&fre) && QueryPerformanceCounter(&cnt)) {
+		return (double)cnt.QuadPart / (double)fre.QuadPart;
+	}
+	else return (double)clock() / (double)CLOCKS_PER_SEC;
+}
+
+typedef int Sodoku[9][9];
+
+// LeerSodoku ==================================================================
+
+void LeerSodoku(Sodoku &s, const char *filename)
+{
+	FILE *fp;
+	fopen_s(&fp,filename, "r");
+	if (fp == NULL) {
+		printf("No se ha podido abrir el fichero %s", filename);
+		exit(1);
+	}
+	for (int i = 0; i < 9; ++i) {
+		for (int j = 0; j < 9; ++j) {
+			fscanf_s(fp,"%d", &s[i][j]);
+		}
+	}
+	fclose(fp);
+}
+
+// Print =======================================================================
+
+void Print(Sodoku &s) {
+	for (int i = 0; i < 9; ++i) {
+		for (int j = 0; j < 9; ++j) {
+			printf("%d ", s[i][j]);
+		}
+		puts("");
+	}
+}
+
+// Functions
 const int domain[9] = { 1,2,3,4,5,6,7,8,9 };
 
 const int N = 9;
@@ -14,15 +97,24 @@ const int SUB_N = 3;
 const int COORDS = 2;
 const int EMPTY = 0;
 
-struct SODOKU_POS {
+
+//Global Structures
+
+struct SodokuPos {
 	int x;
 	int y;
 };
 
-SODOKU_POS getCandidat(int sodoku[N][N]) {
+Sodoku colNumbers;
+Sodoku rowNumbers;
+Sodoku subNumbers;
+Sodoku defNumbers;
+SodokuPos lastPos;
+
+SodokuPos getCandidat(Sodoku sodoku) {
 
 	int i, j;
-	SODOKU_POS sol;
+	SodokuPos sol;
 
 	i = 0;
 	while (i < N) {
@@ -37,97 +129,26 @@ SODOKU_POS getCandidat(int sodoku[N][N]) {
 		}
 		i++;
 	}
-
 }
 
-bool checkSodokuComplete(int sodoku[N][N]) {
-
-	int i, j;
-
-	i = 0;
-	while (i < N) {
-		j = 0;
-		while (j < N) {
-			if (sodoku[i][j] == EMPTY) {
-				return false;
-			}
-			j++;
-		}
-		i++;
-	}
-
-	return true;
+bool checkSodokuComplete(Sodoku sodoku, SodokuPos pos) {
+	return (pos.x == lastPos.x && pos.y == lastPos.y);
 }
 
-void printSodoku(int sodoku[N][N]) {
-
-	int i, j;
-
-	cout << "###########################" << endl;
-	for (i = 0; i < N; i++) {
-		for (j = 0; j < N; j++) {
-			cout << sodoku[i][j] << " ";
-		}
-		cout << endl;
-	}
-	cout << "###########################" << endl;
+bool checkNumberCol(Sodoku sodoku, int num, int col) {
+	return !colNumbers[col][num-1];
 }
 
-bool checkNumberCol(int sodoku[N][N], int num, int col) {
-
-	int i = 0;
-
-	while(i < N){
-		if (sodoku[i][col] == num) {
-			return false;
-		}
-
-		i++;
-	}
-
-	return true;
+bool checkNumberRow(Sodoku sodoku, int num, int row) {
+	return !rowNumbers[row][num-1];
 }
 
-bool checkNumberRow(int sodoku[N][N], int num, int row) {
-
-	int i = 0;
-
-	while (i < N) {
-		if (sodoku[row][i] == num) {
-			return false;
-		}
-
-		i++;
-	}
-
-	return true;
+bool checkSub3(Sodoku sodoku, int num, SodokuPos pos) {
+	return !subNumbers[(pos.y - (pos.y % 3)) + ((pos.x - (pos.x % 3)) / 3)][num - 1];
 }
 
-bool checkSub3(int sodoku[N][N], int num, SODOKU_POS pos) {
+bool checkRestrictions(Sodoku sodoku, int num, SodokuPos pos) {
 
-	int subCol, subRow, i, j;
-
-	subRow = (pos.y / SUB_N) * SUB_N;
-	subCol = (pos.x / SUB_N) * SUB_N;
-
-	i = subRow;
-	j = subCol;
-	
-	while (i < subRow+SUB_N) {
-		while (j < subCol+SUB_N) {
-			if (sodoku[i][j] == num) {
-				return false;
-			}
-			j++;
-		}
-		i++;
-	}
-
-	return true;
-}
-
-bool checkRestrictions(int sodoku[N][N], int num, SODOKU_POS pos) {
-	
 	if (!checkNumberCol(sodoku, num, pos.x))
 		return false;
 
@@ -140,20 +161,28 @@ bool checkRestrictions(int sodoku[N][N], int num, SODOKU_POS pos) {
 	return true;
 }
 
-bool resolve(int sodoku[N][N]) {
+bool resolve(Sodoku sodoku, SodokuPos lastPos) {
 
-	if (checkSodokuComplete(sodoku))
+	if (checkSodokuComplete(sodoku, lastPos))
 		return true;
 
-	SODOKU_POS pos = getCandidat(sodoku);
+	SodokuPos pos = getCandidat(sodoku);
 
-	for(int i : domain){
+	for (int i : domain) {
 		if (checkRestrictions(sodoku, i, pos)) {
 			sodoku[pos.y][pos.x] = i;
+			rowNumbers[pos.y][i-1] = 1;
+			colNumbers[pos.x][i-1] = 1;
+			subNumbers[(pos.y - (pos.y % 3)) + ((pos.x - (pos.x % 3)) / 3)][i - 1] = 1;
 
-			if (resolve(sodoku)) {
+			if (resolve(sodoku, pos)) {
 				return true;
 			}
+
+			sodoku[pos.y][pos.x] = 0;
+			rowNumbers[pos.y][i-1] = 0;
+			colNumbers[pos.x][i-1] = 0;
+			subNumbers[(pos.y - (pos.y % 3)) + ((pos.x - (pos.x % 3)) / 3)][i - 1] = 0;
 		}
 	}
 
@@ -162,27 +191,86 @@ bool resolve(int sodoku[N][N]) {
 	return false;
 }
 
+void loadBooleanStructures(Sodoku sodoku) {
 
-int main()
+	int i, j;
+	int subRow, subCol;
+
+	for (i = 0; i < N; i++) {
+		for (j = 0; j < N; j++) {
+			if (sodoku[i][j] != 0) {
+				//Init Row
+				rowNumbers[i][sodoku[i][j]-1] = true;
+				//Init Col
+				colNumbers[j][sodoku[i][j]-1] = true;
+				//Init sub3x3 
+				subRow = i - (i % 3);
+				subCol = j - (j % 3);
+				subNumbers[subRow + (subCol / 3)][sodoku[i][j] - 1] = true;
+			}
+			else {
+				lastPos.x = j;
+				lastPos.y = i;
+			}
+		}
+	}
+
+}
+
+void initMatrix(Sodoku matrix) {
+	int i, j;
+	for (i = 0; i < N; i++) {
+		for (j = 0; j < N; j++) {
+			matrix[i][j] = 0;
+		}
+	}
+}
+
+// main ========================================================================
+
+Sodoku taulell; // Variable per guadar el taulell del Sodoku
+
+int main(int argc, char *argv[])
 {
-	int sodoku[9][9] = {
-		{ 0,0,0,2,4,0,0,3,5 },
-		{ 0,0,0,0,5,7,0,0,0 },
-		{ 2,0,0,6,0,8,0,0,0 },
-		{ 0,0,0,0,8,0,0,0,6 },
-		{ 0,7,4,0,0,0,3,0,8 },
-		{ 0,0,8,7,9,1,4,0,0 },
-		{ 0,5,0,0,6,0,0,8,0 },
-		{ 0,0,0,4,0,0,6,0,0 },
-		{ 0,2,9,8,7,3,0,0,1 },
-	};
-	//stack<SODOKU_POS> soluciones;
+	if (!CheckNIA(NIAAlumno1) || !(*NIAAlumno2 == '\0' || CheckNIA(NIAAlumno2))) {
+		puts("Indentificacio dels alumnes incorrecte");
+		return 1;
+	}
+	printf("NIA1: %s\n",NIAAlumno1 );
+	printf("NOM1: %s\n", NombreAlumno1);
+	printf("COGNOMS1: %s\n", ApellidosAlumno1);
+	printf("NIA2: %s\n", NIAAlumno2);
+	printf("NOM2: %s\n", NombreAlumno2);
+	printf("COGNOMS2: %s\n", ApellidosAlumno2);
+	if (argc != 2) {
+		puts("Uso: sodoku FicheroDeSodoku\n");
+		return 1;
+	}
+	LeerSodoku(taulell, argv[1]);
+	puts("\nSODOKU:");
+	Print(taulell);
+	bool HiHaSolucio=false;
+	double t0 = Clock();
 
-	bool resuelto = resolve(sodoku);
-	
-	printSodoku(sodoku);
-	cin.get();
+	SodokuPos pos;
+	pos.x = 0;
+	pos.y = 0;
 
+	initMatrix(colNumbers);
+	initMatrix(rowNumbers);
+	initMatrix(subNumbers);
+	loadBooleanStructures(taulell);
+	HiHaSolucio = resolve(taulell, pos);
+
+	double t1 = Clock();
+	if (HiHaSolucio) {
+		puts("\nSOLUCIO:");
+		Print(taulell);
+	}
+	else {
+		puts("\nNO TE SOLUCIO");
+	}
+	printf("TEMPS: %lf\n", t1 - t0);
     return 0;
 }
 
