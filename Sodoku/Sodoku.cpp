@@ -109,30 +109,43 @@ Sodoku colNumbers;
 Sodoku rowNumbers;
 Sodoku subNumbers;
 Sodoku defNumbers;
-SodokuPos lastPos;
+Sodoku complete;
 
-SodokuPos getCandidat(Sodoku sodoku) {
+SodokuPos getNextPos(Sodoku &sodoku, SodokuPos actual) {
 
-	int i, j;
-	SodokuPos sol;
+	SodokuPos pos;
+	pos.x = actual.x + 1;
+	pos.y = actual.y;
 
-	i = 0;
-	while (i < N) {
-		j = 0;
-		while (j < N) {
-			if (sodoku[i][j] == EMPTY) {
-				sol.y = i;
-				sol.x = j;
-				return sol;
-			}
-			j++;
-		}
-		i++;
+	if (pos.x > 8) {
+		pos.x = 0;
+		pos.y++;
 	}
+
+	while (defNumbers[pos.y][pos.x]) {
+		pos.x++;
+		if (pos.x > 8) {
+			pos.x = 0;
+			pos.y++;
+		}
+	}
+
+	return pos;
 }
 
 bool checkSodokuComplete(Sodoku sodoku, SodokuPos pos) {
-	return (pos.x == lastPos.x && pos.y == lastPos.y);
+	
+	int i;
+
+	i = 0;
+	while (i < N) {
+		if (!complete[8][i]) {
+			return false;
+		}
+		i++;
+	}
+
+	return true;
 }
 
 bool checkNumberCol(Sodoku sodoku, int num, int col) {
@@ -161,12 +174,10 @@ bool checkRestrictions(Sodoku sodoku, int num, SodokuPos pos) {
 	return true;
 }
 
-bool resolve(Sodoku sodoku, SodokuPos lastPos) {
+bool resolve(Sodoku &sodoku, SodokuPos pos) {
 
-	if (checkSodokuComplete(sodoku, lastPos))
+	if (checkSodokuComplete(sodoku, pos))
 		return true;
-
-	SodokuPos pos = getCandidat(sodoku);
 
 	for (int i : domain) {
 		if (checkRestrictions(sodoku, i, pos)) {
@@ -174,8 +185,9 @@ bool resolve(Sodoku sodoku, SodokuPos lastPos) {
 			rowNumbers[pos.y][i-1] = 1;
 			colNumbers[pos.x][i-1] = 1;
 			subNumbers[(pos.y - (pos.y % 3)) + ((pos.x - (pos.x % 3)) / 3)][i - 1] = 1;
+			complete[pos.y][pos.x] = 1;
 
-			if (resolve(sodoku, pos)) {
+			if (resolve(sodoku, getNextPos(sodoku, pos))) {
 				return true;
 			}
 
@@ -183,10 +195,9 @@ bool resolve(Sodoku sodoku, SodokuPos lastPos) {
 			rowNumbers[pos.y][i-1] = 0;
 			colNumbers[pos.x][i-1] = 0;
 			subNumbers[(pos.y - (pos.y % 3)) + ((pos.x - (pos.x % 3)) / 3)][i - 1] = 0;
+			complete[pos.y][pos.x] = 0;
 		}
 	}
-
-	sodoku[pos.y][pos.x] = 0;
 
 	return false;
 }
@@ -207,10 +218,8 @@ void loadBooleanStructures(Sodoku sodoku) {
 				subRow = i - (i % 3);
 				subCol = j - (j % 3);
 				subNumbers[subRow + (subCol / 3)][sodoku[i][j] - 1] = true;
-			}
-			else {
-				lastPos.x = j;
-				lastPos.y = i;
+				defNumbers[i][j] = true;
+				complete[i][j] = true;
 			}
 		}
 	}
@@ -252,14 +261,16 @@ int main(int argc, char *argv[])
 	bool HiHaSolucio=false;
 	double t0 = Clock();
 
-	SodokuPos pos;
-	pos.x = 0;
-	pos.y = 0;
-
 	initMatrix(colNumbers);
 	initMatrix(rowNumbers);
 	initMatrix(subNumbers);
+	initMatrix(complete);
 	loadBooleanStructures(taulell);
+
+	SodokuPos pos;
+	pos.x = -1;
+	pos.y = 0;
+	pos = getNextPos(taulell, pos);
 	HiHaSolucio = resolve(taulell, pos);
 
 	double t1 = Clock();
