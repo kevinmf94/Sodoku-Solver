@@ -11,14 +11,14 @@
 // ALUMNOS =====================================================================
 // =============================================================================
 
-char* NombreAlumno1 = "nombre del alumno 1";
-char* ApellidosAlumno1 = "apellidos del alumno 1";
-char* NIAAlumno1 = "1423234"; // NIA alumno1
+char* NombreAlumno1 = "Eric";
+char* ApellidosAlumno1 = "Cañas";
+char* NIAAlumno1 = "1423177"; // NIA alumno1
 
 								// No rellenar en caso de grupo de un alumno
-char* NombreAlumno2 = "nombre del alumno 2";
-char* ApellidosAlumno2 = "apellidos del alumno 2";
-char* NIAAlumno2 = ""; // NIA alumno2
+char* NombreAlumno2 = "Kevin";
+char* ApellidosAlumno2 = "Martín";
+char* NIAAlumno2 = "1423234"; // NIA alumno2
 
 char* NIAS[] = {
 	"1335167","1428136","1397750","1390855","1424739","1424670","1423739",
@@ -122,7 +122,7 @@ SodokuPos getNextPos(Sodoku &sodoku, SodokuPos actual) {
 		pos.y++;
 	}
 
-	while (defNumbers[pos.y][pos.x]) {
+	while (defNumbers[pos.y][pos.x] && pos.x < 9 && pos.y < 9) {
 		pos.x++;
 		if (pos.x > 8) {
 			pos.x = 0;
@@ -133,19 +133,8 @@ SodokuPos getNextPos(Sodoku &sodoku, SodokuPos actual) {
 	return pos;
 }
 
-bool checkSodokuComplete(Sodoku sodoku, SodokuPos pos) {
-	
-	int i;
-
-	i = 0;
-	while (i < N) {
-		if (!complete[8][i]) {
-			return false;
-		}
-		i++;
-	}
-
-	return true;
+bool checkSodokuComplete(SodokuPos pos) {
+	return (pos.x > 8 || pos.y > 8);
 }
 
 bool checkNumberCol(Sodoku sodoku, int num, int col) {
@@ -176,7 +165,7 @@ bool checkRestrictions(Sodoku sodoku, int num, SodokuPos pos) {
 
 bool resolve(Sodoku &sodoku, SodokuPos pos) {
 
-	if (checkSodokuComplete(sodoku, pos))
+	if (checkSodokuComplete(pos))
 		return true;
 
 	for (int i : domain) {
